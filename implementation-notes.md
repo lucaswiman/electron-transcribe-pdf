@@ -33,3 +33,10 @@ Happy hacking!
 
 - Run `npm install --save-dev electron`
 - `curl https://raw.githubusercontent.com/electron/electron-quick-start/master/main.js > electron-starter.js`
+- Follow remaining instructions in blog post.
+
+
+## Running
+- `npm run start` in on tab (starts the react server on port 3000)
+- `npm run electron` in another tab
+
