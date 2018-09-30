@@ -26,3 +26,8 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+.hiddenCanvas {
+  /* This element is used for rendering pages of the PDF being recognized. */
+  display: none;
+}

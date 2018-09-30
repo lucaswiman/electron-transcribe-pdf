@@ -41,26 +41,23 @@ class BufferPDF extends React.Component {
     }
   }
 
-  renderPage = (page) => {
-    this.state.pdf.getPage(page).then((page) => {
-      const viewport = page.getViewport(this.props.scale);
+  renderPage = async (pageNumber) => {
+    const page = await this.state.pdf.getPage(pageNumber);
+    const viewport = page.getViewport(this.props.scale);
 
-      const { canvas } = this;
-      const canvasContext = canvas.getContext('2d');
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
+    const { canvas } = this;
+    const canvasContext = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
 
-      const renderContext = {
-        canvasContext,
-        viewport,
-      };
-      const task = page.render(renderContext);
-      if (this.props.pageRenderedCallBack) {
-        task.promise.then(() => {
-          this.props.pageRenderedCallBack(canvas);
-        });
-      }
-    });
+    const renderContext = {
+      canvasContext,
+      viewport,
+    };
+    await page.render(renderContext);
+    if (this.props.pageRenderedCallBack) {
+      this.props.pageRenderedCallBack(canvas);
+    }
   }
 
   render() {
