@@ -8,6 +8,7 @@ import loadModels from './storage.js';
 const fs = window.require('fs');
 const remote = window.require('electron').remote;
 const Sequelize = window.require('sequelize');
+const Tesseract = window.Tesseract;
 
 
 const dialog = remote.dialog;
@@ -61,6 +62,25 @@ class App extends Component {
     const canvas = document.getElementById('hiddenCanvas');  // This is probably a react no-no, but whatevs.
     console.log(canvas);
     const canvasContext = canvas.getContext('2d');
+    window.pageToResults = {}
+    const promiseToRecognize = (blob, pageNumber) => {
+      return new Promise((resolve, reject) => {
+        Tesseract.recognize(blob)
+        .progress((message) => {
+          this.setState({
+            recognitionStatus: `Recognizing page ${pageNumber}: ${message.status} (${Math.round(100 * message.progress)}%)`,
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          reject(err);
+        })
+        .then(result => resolve(result))
+        .finally(resultOrError => {
+          window.pageToResults[pageNumber] = resultOrError;
+        })
+      });
+    }
     for (var pageNumber=1; pageNumber <= pdf.numPages; pageNumber++) {
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport(2);
@@ -72,11 +92,12 @@ class App extends Component {
       };
       await page.render(renderContext);
       const blob = await getCanvasBlob(canvas);
-      this.setState({
-        recognitionStatus: `page ${pageNumber}: ${blob}`
-      });
-      console.log(blob);
+      const recognitionResult = await promiseToRecognize(blob, pageNumber);
+      console.log(recognitionResult);
     }
+    this.setState({
+      recognitionStatus: `Recognized ${pdf.numPages} page(s).`,
+    });
   }
 
   renderPDF = async (fileName) => {
