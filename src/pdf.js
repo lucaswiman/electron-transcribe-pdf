@@ -26,7 +26,6 @@ class BufferPDF extends React.Component {
   };
 
   componentDidMount() {
-    PdfJsLib.GlobalWorkerOptions.workerSrc = '//cdnjs.cloudflare.com/ajax/libs/pdf.js/2.0.550/pdf.worker.js';
     PdfJsLib.getDocument(this.props.file).then((pdf) => {
       this.setState({ pdf });
       if (this.props.onDocumentComplete) {
