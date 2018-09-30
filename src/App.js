@@ -12,6 +12,16 @@ const Sequelize = window.require('sequelize');
 
 const dialog = remote.dialog;
 
+function getCanvasBlob(canvas) {
+  // https://stackoverflow.com/questions/42458849/access-blob-value-outside-of-canvas-toblob-async-function
+  return new Promise(function(resolve, reject) {
+    canvas.toBlob(function(blob) {
+      resolve(blob)
+    })
+  })
+}
+
+
 class App extends Component {
   state = {
     renderedPDF: null,
@@ -22,10 +32,6 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
         <p className="App-intro">
           {this.state.recognitionStatus}
         </p>
@@ -52,8 +58,24 @@ class App extends Component {
   handleRecognition = async (pdfData) => {
     this.setState({'hiddenCanvas': <canvas id="hiddenCanvas" />});
     const pdf = await PdfJsLib.getDocument(pdfData.data);
-    for (var i=1; i <= pdf.numPages; i++) {
-      console.log(`page ${i}`);
+    const canvas = document.getElementById('hiddenCanvas');  // This is probably a react no-no, but whatevs.
+    console.log(canvas);
+    const canvasContext = canvas.getContext('2d');
+    for (var pageNumber=1; pageNumber <= pdf.numPages; pageNumber++) {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport(2);
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      const renderContext = {
+        canvasContext,
+        viewport,
+      };
+      await page.render(renderContext);
+      const blob = await getCanvasBlob(canvas);
+      this.setState({
+        recognitionStatus: `page ${pageNumber}: ${blob}`
+      });
+      console.log(blob);
     }
   }
 
