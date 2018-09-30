@@ -9,7 +9,7 @@ class BufferPDF extends React.Component {
     file: PropTypes.any.isRequired,
     page: PropTypes.number,
     onDocumentComplete: PropTypes.func,
-    renderedCallBack: PropTypes.func,
+    pageRenderedCallBack: PropTypes.func,
     scale: PropTypes.number,
   }  
 
@@ -17,7 +17,8 @@ class BufferPDF extends React.Component {
     page: 1,
     onDocumentComplete: null,
     renderedCallBack: null,
-    scale: 1.5
+    scale: 1.5,
+    pageRenderedCallBack: null,
   }
 
   state = {
@@ -54,7 +55,13 @@ class BufferPDF extends React.Component {
         canvasContext,
         viewport,
       };
-      page.render(renderContext);
+      const task = page.render(renderContext);
+      console.log(this.props.pageRenderedCallBack)
+      if (this.props.pageRenderedCallBack) {
+        task.promise.then(() => {
+          this.props.pageRenderedCallBack(canvas);
+        });
+      }
     });
   }
 
@@ -67,9 +74,17 @@ class MyPdfViewer extends React.Component {
   state = {};
  
   onDocumentComplete = (pages) => {
-    this.setState({ page: 1, pages });
+    this.setState({ page: 1, pages: pages });
   }
- 
+
+  pageRenderedCallBack = (canvas) => {
+    canvas.toBlob((blob) => {
+      console.log(blob);
+      console.log(typeof blob);
+      console.log(blob.length);
+    });
+  }
+
   handlePrevious = () => {
     this.setState({ page: this.state.page - 1 });
   }
@@ -108,6 +123,7 @@ class MyPdfViewer extends React.Component {
           file={this.props.file}
           onDocumentComplete={this.onDocumentComplete}
           page={this.state.page}
+          pageRenderedCallBack={this.pageRenderedCallBack}
         />
         {pagination}
       </div>
