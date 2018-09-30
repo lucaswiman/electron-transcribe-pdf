@@ -55,7 +55,6 @@ class BufferPDF extends React.Component {
         viewport,
       };
       const task = page.render(renderContext);
-      console.log(this.props.pageRenderedCallBack)
       if (this.props.pageRenderedCallBack) {
         task.promise.then(() => {
           this.props.pageRenderedCallBack(canvas);
@@ -78,9 +77,9 @@ class MyPdfViewer extends React.Component {
 
   pageRenderedCallBack = (canvas) => {
     canvas.toBlob((blob) => {
-      console.log(blob);
-      console.log(typeof blob);
-      console.log(blob.length);
+      // console.log(blob);
+      // console.log(typeof blob);
+      // console.log(blob.length);
     });
   }
 
