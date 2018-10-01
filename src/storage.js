@@ -10,45 +10,21 @@ function loadModels(sequelize_connection) {
       defaultValue: Sequelize.UUIDV4
     },
     name: Sequelize.STRING,
+    sha256: Sequelize.STRING,
     data: Sequelize.BLOB,
+    recognizedParagraphs: Sequelize.JSON,
   }
   );
-
-  models.RecognizedParagraph = sequelize_connection.define('recognizedparagraph', {
+  models.Page = sequelize_connection.define('page', {
     id: {
       primaryKey: true,
       type: Sequelize.UUID,
       defaultValue: Sequelize.UUIDV4
     },
-    position: Sequelize.INTEGER,
-    value: Sequelize.TEXT,
-    metadata: Sequelize.JSON,
+    pageNumber: Sequelize.INTEGER,
+    recognizedParagraphs: Sequelize.JSON,
   });
-
-
-  models.RecognizedLine = sequelize_connection.define('recognizedline', {
-    id: {
-      primaryKey: true,
-      type: Sequelize.UUID,
-      defaultValue: Sequelize.UUIDV4
-    },
-    position: Sequelize.INTEGER,
-    value: Sequelize.TEXT,
-    metadata: Sequelize.JSON,
-    });
-  models.RecognizedLine.belongsTo(models.RecognizedParagraph);
-
-  models.RecognizedWord = sequelize_connection.define('recognizedword', {
-    id: {
-      primaryKey: true,
-      type: Sequelize.UUID,
-      defaultValue: Sequelize.UUIDV4
-    },
-    position: Sequelize.INTEGER,
-    value: Sequelize.TEXT,
-    metadata: Sequelize.JSON,
-  });
-  models.RecognizedWord.belongsTo(models.RecognizedLine);
+  models.Page.belongsTo(models.PDFData);
 
   return models;
 }

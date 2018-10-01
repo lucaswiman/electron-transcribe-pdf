@@ -4,6 +4,7 @@ import './App.css';
 import PdfJsLib from 'pdfjs-dist';
 import MyPdfViewer  from './pdf.js';
 import loadModels from './storage.js';
+import TesseractProcessor from './tesseract-processor.js';
 
 const fs = window.require('fs');
 const remote = window.require('electron').remote;
@@ -19,6 +20,7 @@ class App extends Component {
     db: null,
     hiddenCanvas: null,
     recognitionStatus: null,
+    models: null,
   };
   render() {
     return (
@@ -43,7 +45,9 @@ class App extends Component {
   }
 
   componentDidMount = () => {
-    this.renderPDF('/tmp/foo.ebook');
+    if (fs.existsSync('/tmp/foo.ebook')) {
+      this.renderPDF('/tmp/foo.ebook');
+    }
   }
 
   handleRecognition = async (pdfData) => {
@@ -53,6 +57,7 @@ class App extends Component {
     console.log(canvas);
     const canvasContext = canvas.getContext('2d');
     window.pageToResults = {}
+    window.pageToParagraphs = {}
 
     const promiseToRecognize = (blob, pageNumber) => {
       // Make Tesseract behave in a promise-ish sort of way: https://github.com/naptha/tesseract.js/issues/120
@@ -67,14 +72,23 @@ class App extends Component {
           console.error(err);
           reject(err);
         })
-        .then(result => resolve(result))
-        .finally(resultOrError => {
-          window.pageToResults[pageNumber] = resultOrError;
+        .then(result => {
+          window.pageToParagraphs[pageNumber] = TesseractProcessor.processParagraphs(result.paragraphs);
+          resolve(result);
         })
       });
     }
-
+    var numRecognizedPages = 0;
     for (var pageNumber=1; pageNumber <= pdf.numPages; pageNumber++) {
+      const existingPageData = await this.state.models.Page.findAll({
+        where: {
+          pdfdatumId: pdfData.id,
+          pageNumber: pageNumber,
+        }
+      });
+      if (existingPageData.length > 0) {
+        continue;
+      }
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport(2);
       canvas.height = viewport.height;
@@ -91,11 +105,29 @@ class App extends Component {
         });
       });
       const recognitionResult = await promiseToRecognize(blob, pageNumber);
+      this.state.models.Page.create({
+        pdfdatumId: pdfData.id,
+        pageNumber: pageNumber,
+        recognizedParagraphs: TesseractProcessor.processParagraphs(recognitionResult.paragraphs),
+      });
+      numRecognizedPages += 1;
+
       console.log(recognitionResult);
     }
-    this.setState({
-      recognitionStatus: `Recognized ${pdf.numPages} page(s).`,
-    });
+    if (numRecognizedPages === pdf.numPages) {
+      this.setState({
+        recognitionStatus: `Recognized ${pdf.numPages} page(s).`,
+      });
+    } else if (numRecognizedPages == 0) {
+      this.setState({
+        recognitionStatus: `Loaded recognition data for ${pdf.numPages} pages`,
+      });
+    } else {
+      this.setState({
+        recognitionStatus: `Loaded recognition data for ${pdf.numPages - numRecognizedPages} and recognized the remaining ${numRecognizedPages} pages.`,
+      });
+
+    }
   }
 
   renderPDF = async (fileName) => {
@@ -106,7 +138,7 @@ class App extends Component {
         'dialect': 'sqlite',
         'storage': '/tmp/foo.ebook',
       });
-      const models = loadModels(connection);
+      models = loadModels(connection);
       await connection.sync();
       await models.PDFData.create({
         name: fileName,
@@ -118,7 +150,7 @@ class App extends Component {
         'dialect': 'sqlite',
         'storage': fileName,
       });
-      const models = loadModels(connection);
+      models = loadModels(connection);
       pdfData = await models.PDFData.findOne();
       buffer = pdfData.data;
     } else {
