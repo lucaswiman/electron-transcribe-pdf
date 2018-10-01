@@ -13,16 +13,6 @@ const Tesseract = window.Tesseract;
 
 const dialog = remote.dialog;
 
-function getCanvasBlob(canvas) {
-  // https://stackoverflow.com/questions/42458849/access-blob-value-outside-of-canvas-toblob-async-function
-  return new Promise(function(resolve, reject) {
-    canvas.toBlob(function(blob) {
-      resolve(blob)
-    })
-  })
-}
-
-
 class App extends Component {
   state = {
     renderedPDF: null,
@@ -63,7 +53,9 @@ class App extends Component {
     console.log(canvas);
     const canvasContext = canvas.getContext('2d');
     window.pageToResults = {}
+
     const promiseToRecognize = (blob, pageNumber) => {
+      // Make Tesseract behave in a promise-ish sort of way: https://github.com/naptha/tesseract.js/issues/120
       return new Promise((resolve, reject) => {
         Tesseract.recognize(blob)
         .progress((message) => {
@@ -81,6 +73,7 @@ class App extends Component {
         })
       });
     }
+
     for (var pageNumber=1; pageNumber <= pdf.numPages; pageNumber++) {
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport(2);
@@ -91,7 +84,12 @@ class App extends Component {
         viewport,
       };
       await page.render(renderContext);
-      const blob = await getCanvasBlob(canvas);
+      // Canvas.toBlob also doesn't use the Promise API.
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(function(blob) {
+          resolve(blob)
+        });
+      });
       const recognitionResult = await promiseToRecognize(blob, pageNumber);
       console.log(recognitionResult);
     }
