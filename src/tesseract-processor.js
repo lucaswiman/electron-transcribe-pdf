@@ -1,3 +1,5 @@
+import {convertToRaw, ContentState, EditorState} from 'draft-js';
+import DraftPasteProcessor from 'draft-js/lib/DraftPasteProcessor';
 
 const processSymbol = (symbol) => {
   return {
@@ -56,11 +58,40 @@ const processParagraph = (paragraph) => {
     };
 };
 
-module.exports = {
-    processParagraphs: (paragraphs) => {
-      return paragraphs.map(processParagraph);
-    },
-    serializePageRecognition: (recognitionResult) => {
-      return JSON.stringify(recognitionResult.paragraphs.map(processParagraph));
-    },
+export default {
+  processParagraphs: (paragraphs) => {
+    return paragraphs.map(processParagraph);
+  },
+  serializePageRecognition: (recognitionResult) => {
+    return JSON.stringify(recognitionResult.paragraphs.map(processParagraph));
+  },
+  lineToDraftEditorState: (tesseractLine) => {
+    const htmlWords = [];
+    var lineHtml = '<span>';
+    for (var i=0; i<tesseractLine.words.length; i++) {
+      const word = tesseractLine.words[i];
+      var isSuperscript = false;
+      if (i !== 0) {
+        lineHtml += ' ';
+      }
+      for (var j=0; j<word.symbols.length; j++) {
+        const symbol = word.symbols[j];
+        if (symbol.is_superscript && (symbol.is_superscript !== isSuperscript)) {
+          lineHtml += '<sup>';
+          isSuperscript = true;
+        } else if (isSuperscript && !symbol.is_superscript) {
+          lineHtml += '</sup>';
+          isSuperscript = false;
+        }
+        lineHtml += symbol.text;
+      }
+      if (isSuperscript) {
+        isSuperscript = false;
+        lineHtml += '</sup>'
+      }
+    }
+    lineHtml += '</span>';
+    console.log([lineHtml, DraftPasteProcessor.processHTML(lineHtml)]);
+    return EditorState.createWithContent(ContentState.createFromBlockArray(DraftPasteProcessor.processHTML(lineHtml)));
+  },
 };

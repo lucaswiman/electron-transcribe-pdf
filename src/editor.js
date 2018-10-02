@@ -1,4 +1,35 @@
 import React from 'react';
+import {Editor as DraftJSEditor, EditorState, RichUtils} from 'draft-js';
+
+import TesseractProcessor from './tesseract-processor.js';
+
+class LineEditor extends React.Component {
+  // TODO superscript and other styling https://stackoverflow.com/a/40966563/303931
+  constructor(props) {
+    super(props);
+    this.state = {editorState: this.props.editorState};
+    this.onChange = (editorState) => this.setState({editorState});
+    this.handleKeyCommand = this.handleKeyCommand.bind(this);
+  }
+  handleKeyCommand(command, editorState) {
+    const newState = RichUtils.handleKeyCommand(editorState, command);
+    if (newState) {
+      this.onChange(newState);
+      return 'handled';
+    }
+    return 'not-handled';
+  }
+  render() {
+    return (
+      <DraftJSEditor
+        editorState={this.state.editorState}
+        handleKeyCommand={this.handleKeyCommand}
+        onChange={this.onChange}
+      />
+    );
+  }
+}
+
 
 class Editor extends React.Component {
     state = {
@@ -7,6 +38,7 @@ class Editor extends React.Component {
     constructor(props) {
       super(props);
       this.canvasRef = React.createRef();
+      this.lineCanvasRef = React.createRef();
     }
 
     renderPage = async () => {
@@ -23,23 +55,36 @@ class Editor extends React.Component {
         viewport,
       });
       window.pageData = pageData;
+      const lineCanvas = this.lineCanvasRef.current;
       for (var i=0; i < pageData.recognizedParagraphs.length; i++) {
-        console.log([i, children]);
         const paragraph = pageData.recognizedParagraphs[i];
         var lineElements = [];
         for (var j=0; j< paragraph.lines.length; j++) {
-          lineElements.push(<div>{paragraph.lines[j].text}</div>);
+          const line = paragraph.lines[j];
+          
+          const imageData = canvasContext.getImageData(
+            line.bbox.x0,
+            line.bbox.y0,
+            line.bbox.x1 - line.bbox.x0,
+            line.bbox.y1 - line.bbox.y0);
+          lineCanvas.height = line.bbox.y1 - line.bbox.y0;
+          lineCanvas.width = line.bbox.x1 - line.bbox.x0;
+          const lineCtx = lineCanvas.getContext('2d');
+          lineCtx.putImageData(imageData, 0, 0);
+          lineElements.push(
+            <img src={lineCanvas.toDataURL('image/png')}
+                 key={`${pageData.pageNumber}-original-paragraph-${i}-line-${j}`}/>
+          );
+          lineElements.push(
+            <LineEditor editorState={TesseractProcessor.lineToDraftEditorState(line)} key={`text-paragraph-${i}-line-${j}`}/>
+          );
         }
-        var value = <p>{lineElements}</p>;
-        console.log(value);
+        var value = <div key={`page-${pageData.pageNumber}-paragraph-${i}`}>{lineElements}</div>;
         children.push(value);
       }
       this.setState({
         children: children
       });
-      console.log(children)
-      // const paragraphs = 
-      // for (var i=0; i <  )
     }
     componentDidMount() {
       this.renderPage();
@@ -52,6 +97,7 @@ class Editor extends React.Component {
         <div ref={(container) => {this.container = container; }}>
           {this.state.children}
           <canvas style={{display: 'none'}} ref={this.canvasRef} />
+          <canvas style={{display: 'none'}} ref={this.lineCanvasRef} />
         </div>
       );
     }

@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "pdfjs-dist": "^2.0.489",
     "react": "^16.5.2",
     "react-dom": "^16.5.2",
     "react-scripts": "1.1.5",
     "sequelize": "^4.39.0",
     "sqlite3": "^4.0.2",
-    "pdfjs-dist": "^2.0.489"
+    "draft-js": "^0.10.5"
   },
   "main": "src/electron-starter.js",
   "scripts": {
@@ -18,11 +19,11 @@
     "eject": "react-scripts eject",
     "electron": "electron .",
     "electron-dev": "ELECTRON_START_URL=http://localhost:3000 electron .",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "install-app-deps"
   },
   "devDependencies": {
     "electron": "^3.0.2",
-    "electron-builder": "20.28.4",
+    "electron-builder": "^20.28.4",
     "electron-rebuild": "^1.8.2"
   },
   "homepage": "./"
