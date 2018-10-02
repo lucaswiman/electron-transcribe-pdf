@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 import PdfJsLib from 'pdfjs-dist';
-import MyPdfViewer  from './pdf.js';
+import Editor from './editor.js';
 import loadModels from './storage.js';
 import TesseractProcessor from './tesseract-processor.js';
 
@@ -29,7 +29,7 @@ class App extends Component {
           {this.state.recognitionStatus}
         </p>
         <a onClick={this.openFile}>Load</a>
-        {this.state.renderedPDF}
+        {this.state.editor}
         {this.state.hiddenCanvas}
       </div>
     );
@@ -54,10 +54,7 @@ class App extends Component {
     this.setState({'hiddenCanvas': <canvas id="hiddenCanvas" />});
     const pdf = await PdfJsLib.getDocument(pdfData.data);
     const canvas = document.getElementById('hiddenCanvas');  // This is probably a react no-no, but whatevs.
-    console.log(canvas);
     const canvasContext = canvas.getContext('2d');
-    window.pageToResults = {}
-    window.pageToParagraphs = {}
 
     const promiseToRecognize = (blob, pageNumber) => {
       // Make Tesseract behave in a promise-ish sort of way: https://github.com/naptha/tesseract.js/issues/120
@@ -79,40 +76,52 @@ class App extends Component {
       });
     }
     var numRecognizedPages = 0;
+    const existingPageData = await this.state.models.Page.findAll({
+      attributes: ['pageNumber'],
+      where: {
+        pdfdatumId: pdfData.id,
+      }
+    });
+    const existingPageNumbers = new Set();
+    for (var i=1; i< existingPageData.length; i++) {
+      existingPageNumbers.add(existingPageData[i].pageNumber);
+    }
     for (var pageNumber=1; pageNumber <= pdf.numPages; pageNumber++) {
-      const existingPageData = await this.state.models.Page.findAll({
-        where: {
+      if (!existingPageNumbers.has(pageNumber)) {
+        const page = await pdf.getPage(pageNumber);
+        const viewport = page.getViewport(2);
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        const renderContext = {
+          canvasContext,
+          viewport,
+        };
+        await page.render(renderContext);
+        // Canvas.toBlob also doesn't use the Promise API.
+        const blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(function(blob) {
+            resolve(blob)
+          });
+        });
+        const recognitionResult = await promiseToRecognize(blob, pageNumber);
+        this.state.models.Page.create({
           pdfdatumId: pdfData.id,
           pageNumber: pageNumber,
-        }
-      });
-      if (existingPageData.length > 0) {
-        continue;
-      }
-      const page = await pdf.getPage(pageNumber);
-      const viewport = page.getViewport(2);
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      const renderContext = {
-        canvasContext,
-        viewport,
-      };
-      await page.render(renderContext);
-      // Canvas.toBlob also doesn't use the Promise API.
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(function(blob) {
-          resolve(blob)
+          recognizedParagraphs: TesseractProcessor.processParagraphs(recognitionResult.paragraphs),
         });
-      });
-      const recognitionResult = await promiseToRecognize(blob, pageNumber);
-      this.state.models.Page.create({
-        pdfdatumId: pdfData.id,
-        pageNumber: pageNumber,
-        recognizedParagraphs: TesseractProcessor.processParagraphs(recognitionResult.paragraphs),
-      });
-      numRecognizedPages += 1;
-
-      console.log(recognitionResult);
+        numRecognizedPages += 1;
+      }
+      if (pageNumber == 39) {
+        const pageData = await this.state.models.Page.findOne({
+          where: {
+            pdfdatumId: pdfData.id,
+            pageNumber: 39,
+          }
+        });
+        this.setState({
+          editor: <Editor pageData={pageData} pdf={pdf} />
+        });
+      }
     }
     if (numRecognizedPages === pdf.numPages) {
       this.setState({
@@ -161,9 +170,7 @@ class App extends Component {
       db: connection,
       models: models,
     });
-  this.handleRecognition(pdfData);
-
-    this.setState({renderedPDF: <MyPdfViewer file={pdfData.data} />});
+    this.handleRecognition(pdfData);
   };
 }
 

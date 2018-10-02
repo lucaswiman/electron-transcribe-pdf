@@ -2,6 +2,8 @@ import React from 'react';
 import PdfJsLib from 'pdfjs-dist';
 import PropTypes from 'prop-types';
 
+// TODO: delete this file; I don't think we need it.
+
 class BufferPDF extends React.Component {
   /* Based on https://github.com/mikecousins/react-pdf-js/blob/master/src/index.js
    * Can accept a buffer rather than a string as the file name and allows for more customization. */

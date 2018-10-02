@@ -38,5 +38,5 @@ Happy hacking!
 
 ## Running
 - `npm run start` in on tab (starts the react server on port 3000)
-- `npm run electron` in another tab
+- `npm run electron-dev` in another tab
 
