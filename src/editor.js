@@ -38,7 +38,9 @@ class LineEditor extends React.Component {
     for (var i=0; i < words.length; i++) {
       const word = words[i];
       renderedWords.push(
-        <WordEditor word={word} key={`editable-word-${i}`} />
+        <div className="editable-word" key={`editable-word-${i}`} style={{left: `${word.bbox.x0}px`}}>
+          <WordEditor word={word}  />
+        </div>
       );
     }
     this.state = {'words': renderedWords};

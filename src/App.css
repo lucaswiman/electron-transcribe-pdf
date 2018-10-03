@@ -34,7 +34,9 @@
 
 .word-editable-line {
   display: block;
+  position: relative;
 }
-.word-editable-line .DraftEditor-root {
+.word-editable-line .editable-word {
   display: inline-block;
+  position: absolute;
 }
