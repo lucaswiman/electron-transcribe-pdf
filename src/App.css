@@ -31,3 +31,10 @@
   /* This element is used for rendering pages of the PDF being recognized. */
   display: none;
 }
+
+.word-editable-line {
+  display: block;
+}
+.word-editable-line .DraftEditor-root {
+  display: inline-block;
+}

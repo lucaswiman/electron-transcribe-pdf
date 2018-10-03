@@ -3,11 +3,11 @@ import {Editor as DraftJSEditor, EditorState, RichUtils} from 'draft-js';
 
 import TesseractProcessor from './tesseract-processor.js';
 
-class LineEditor extends React.Component {
+class WordEditor extends React.Component {
   // TODO superscript and other styling https://stackoverflow.com/a/40966563/303931
   constructor(props) {
     super(props);
-    this.state = {editorState: this.props.editorState};
+    this.state = {editorState: TesseractProcessor.wordToDraftEditorState(this.props.word)};
     this.onChange = (editorState) => this.setState({editorState});
     this.handleKeyCommand = this.handleKeyCommand.bind(this);
   }
@@ -30,6 +30,27 @@ class LineEditor extends React.Component {
   }
 }
 
+class LineEditor extends React.Component {
+  constructor(props) {
+    super(props);
+    const words = this.props.line.words;
+    const renderedWords = [];
+    for (var i=0; i < words.length; i++) {
+      const word = words[i];
+      renderedWords.push(
+        <WordEditor word={word} key={`editable-word-${i}`} />
+      );
+    }
+    this.state = {'words': renderedWords};
+  }
+  render() {
+    return (
+      <div className="word-editable-line">
+        {this.state.words}
+      </div>
+    );
+  }
+}
 
 class Editor extends React.Component {
     state = {
@@ -76,7 +97,7 @@ class Editor extends React.Component {
                  key={`${pageData.pageNumber}-original-paragraph-${i}-line-${j}`}/>
           );
           lineElements.push(
-            <LineEditor editorState={TesseractProcessor.lineToDraftEditorState(line)} key={`text-paragraph-${i}-line-${j}`}/>
+            <LineEditor line={line} key={`text-paragraph-${i}-line-${j}`}/>
           );
         }
         var value = <div key={`page-${pageData.pageNumber}-paragraph-${i}`}>{lineElements}</div>;

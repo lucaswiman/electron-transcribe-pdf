@@ -65,33 +65,25 @@ export default {
   serializePageRecognition: (recognitionResult) => {
     return JSON.stringify(recognitionResult.paragraphs.map(processParagraph));
   },
-  lineToDraftEditorState: (tesseractLine) => {
-    const htmlWords = [];
-    var lineHtml = '<span>';
-    for (var i=0; i<tesseractLine.words.length; i++) {
-      const word = tesseractLine.words[i];
-      var isSuperscript = false;
-      if (i !== 0) {
-        lineHtml += ' ';
-      }
-      for (var j=0; j<word.symbols.length; j++) {
-        const symbol = word.symbols[j];
-        if (symbol.is_superscript && (symbol.is_superscript !== isSuperscript)) {
-          lineHtml += '<sup>';
-          isSuperscript = true;
-        } else if (isSuperscript && !symbol.is_superscript) {
-          lineHtml += '</sup>';
-          isSuperscript = false;
-        }
-        lineHtml += symbol.text;
-      }
-      if (isSuperscript) {
+  wordToDraftEditorState: (tesseractWord) => {
+    let wordHtml = '';
+    let isSuperscript = false;
+    for (var j=0; j<tesseractWord.symbols.length; j++) {
+      const symbol = tesseractWord.symbols[j];
+      if (symbol.is_superscript && (symbol.is_superscript !== isSuperscript)) {
+        wordHtml += '<sup>';
+        isSuperscript = true;
+      } else if (isSuperscript && !symbol.is_superscript) {
+        wordHtml += '</sup>';
         isSuperscript = false;
-        lineHtml += '</sup>'
       }
+      wordHtml += symbol.text;
     }
-    lineHtml += '</span>';
-    console.log([lineHtml, DraftPasteProcessor.processHTML(lineHtml)]);
-    return EditorState.createWithContent(ContentState.createFromBlockArray(DraftPasteProcessor.processHTML(lineHtml)));
+    if (isSuperscript) {
+      isSuperscript = false;
+      wordHtml += '</sup>'
+    }
+    console.log([wordHtml, DraftPasteProcessor.processHTML(wordHtml)]);
+    return EditorState.createWithContent(ContentState.createFromBlockArray(DraftPasteProcessor.processHTML(wordHtml)));
   },
 };

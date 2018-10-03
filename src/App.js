@@ -111,11 +111,11 @@ class App extends Component {
         });
         numRecognizedPages += 1;
       }
-      if (pageNumber == 39) {
+      if (pageNumber == 40) {
         const pageData = await this.state.models.Page.findOne({
           where: {
             pdfdatumId: pdfData.id,
-            pageNumber: 39,
+            pageNumber: 40,
           }
         });
         this.setState({
