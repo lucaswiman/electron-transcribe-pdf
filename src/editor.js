@@ -84,12 +84,12 @@ class Editor extends React.Component {
           const line = paragraph.lines[j];
           
           const imageData = canvasContext.getImageData(
-            line.bbox.x0,
+            0,
             line.bbox.y0,
-            line.bbox.x1 - line.bbox.x0,
+            canvas.width,
             line.bbox.y1 - line.bbox.y0);
           lineCanvas.height = line.bbox.y1 - line.bbox.y0;
-          lineCanvas.width = line.bbox.x1 - line.bbox.x0;
+          lineCanvas.width = canvas.width;
           const lineCtx = lineCanvas.getContext('2d');
           lineCtx.putImageData(imageData, 0, 0);
           lineElements.push(
