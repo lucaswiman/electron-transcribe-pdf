@@ -35,6 +35,8 @@ class LineEditor extends React.Component {
     super(props);
     const words = this.props.line.words;
     const renderedWords = [];
+    const lineHeight = this.props.line.bbox.y1 - this.props.line.bbox.y0;
+    const lineWidth = this.props.line.bbox.x1 - this.props.line.bbox.x0;
     for (var i=0; i < words.length; i++) {
       const word = words[i];
       renderedWords.push(
@@ -47,7 +49,7 @@ class LineEditor extends React.Component {
   }
   render() {
     return (
-      <div className="word-editable-line">
+      <div className="word-editable-line" style={{width: `${this.props.width}px`, height: `${this.props.height}px`}}>
         {this.state.words}
       </div>
     );
@@ -96,10 +98,11 @@ class Editor extends React.Component {
           lineCtx.putImageData(imageData, 0, 0);
           lineElements.push(
             <img src={lineCanvas.toDataURL('image/png')}
-                 key={`${pageData.pageNumber}-original-paragraph-${i}-line-${j}`}/>
+                 key={`${pageData.pageNumber}-original-paragraph-${i}-line-${j}`}
+                 className="line-image" />
           );
           lineElements.push(
-            <LineEditor line={line} key={`text-paragraph-${i}-line-${j}`}/>
+            <LineEditor line={line} key={`text-paragraph-${i}-line-${j}`} width={lineCanvas.height} height={lineCanvas.height} />
           );
         }
         var value = <div key={`page-${pageData.pageNumber}-paragraph-${i}`}>{lineElements}</div>;

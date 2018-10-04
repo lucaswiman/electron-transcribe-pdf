@@ -36,6 +36,9 @@
   display: block;
   position: relative;
 }
+img.line-image {
+  display: block;
+}
 .word-editable-line .editable-word {
   display: inline-block;
   position: absolute;
